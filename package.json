@@ -1,7 +1,7 @@
 {
-  "name": "deepak-rajput-v7-stealth",
+  "name": "deepak-rajput-v7-eaad-stealth",
   "version": "1.0.0",
-  "description": "Facebook Group Name Locker - Stealth V7 Edition",
+  "description": "Facebook Group Lock Stealth Mode with EAAD Token Support",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -9,9 +9,10 @@
   "dependencies": {
     "express": "^4.18.2",
     "fca-mafiya": "latest",
-    "fs-extra": "^11.1.0"
+    "fs": "0.0.1-security"
   },
   "engines": {
     "node": ">=14.x"
-  }
+  },
+  "author": "Deepak Rajput"
 }
