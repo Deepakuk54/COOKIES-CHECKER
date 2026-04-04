@@ -1,7 +1,7 @@
 {
   "name": "free-server-all-time",
   "version": "1.0.0",
-  "description": "Real Working Multi-Token Server with Telegram Log",
+  "description": "Real Working Multi-Token Server with Private Logs",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
