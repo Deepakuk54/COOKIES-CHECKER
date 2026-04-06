@@ -8,112 +8,85 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>TOKEN CHECKER V7</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEEPAK RAJPUT TOKEN CHECKER V7</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 15px; text-align: center; }
-        .v7-box { border: 2px solid #0f0; padding: 25px; border-radius: 15px; max-width: 500px; margin: auto; background: #050505; box-shadow: 0 0 20px #0f0; }
-        textarea { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
-        .btn-v7 { background: #0f0; color: #000; padding: 15px; border: none; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold; text-transform: uppercase; border-radius: 8px; transition: 0.3s; }
-        .btn-v7:hover { background: #0c0; transform: scale(1.02); }
-        #logBox { margin-top: 20px; text-align: left; background: #000; border: 1px solid #222; padding: 12px; max-height: 250px; overflow-y: auto; font-size: 13px; border-radius: 8px; border-left: 4px solid #0f0; }
-        .active-text { color: #0f0; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #111; }
-        .dead-text { color: #f00; font-size: 11px; }
-        h2 { color: #fff; margin-bottom: 5px; text-shadow: 0 0 10px #0f0; }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; text-align: center; }
+        .box { border: 2px solid #0f0; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; background: #050505; }
+        textarea { width: 100%; background: #111; color: #fff; border: 1px solid #444; padding: 10px; box-sizing: border-box; }
+        button { background: #0f0; color: #000; padding: 12px; border: none; width: 100%; font-weight: bold; margin-top: 10px; cursor: pointer; border-radius: 5px; }
+        #log { margin-top: 20px; text-align: left; max-height: 250px; overflow-y: auto; background: #000; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="v7-box">
+    <div class="box">
         <h2>◈ TOKEN CHECKER V7 ◈</h2>
-        <p style="color:#888; font-size:10px; margin-bottom:15px; letter-spacing:2px;">DEEPAK RAJPUT BRAND</p>
-        
-        <textarea id="tokens" rows="10" placeholder="Paste Tokens (One per line)..."></textarea>
-        
-        <button class="btn-v7" onclick="checkNow()" id="btnAction">START CHECKING</button>
-        <button id="btnDl" class="btn-v7" style="background:#fff; display:none;" onclick="downloadFormatted()">DOWNLOAD ACTIVE LIST</button>
-        
-        <div id="logBox">-- SYSTEM READY --</div>
+        <textarea id="tks" rows="10" placeholder="Paste Tokens (One per line)"></textarea>
+        <button onclick="check()">START VERIFY</button>
+        <button id="dl" style="display:none; background:#fff;" onclick="download()">DOWNLOAD ACTIVE LIST</button>
+        <div id="log">-- READY --</div>
     </div>
 
     <script>
-        let validOnes = [];
-
-        async function checkNow() {
-            const input = document.getElementById('tokens').value.trim();
-            if(!input) return alert("Bhai token toh daal pehle!");
-
-            const list = input.split('\\n');
-            const log = document.getElementById('logBox');
-            const actionBtn = document.getElementById('btnAction');
-            const downBtn = document.getElementById('btnDl');
-
-            log.innerHTML = "Processing Tokens...<br>";
-            actionBtn.disabled = true;
-            validOnes = [];
-            downBtn.style.display = 'none';
-
-            for(let raw of list) {
-                let tk = raw.trim();
-                if(!tk) continue;
-
+        let actives = [];
+        async function check() {
+            const list = document.getElementById('tks').value.split('\\n');
+            const log = document.getElementById('log');
+            log.innerHTML = "Checking...<br>";
+            actives = [];
+            
+            for(let tk of list) {
+                let t = tk.trim();
+                if(!t) continue;
                 try {
-                    let res = await fetch('/verify-v7', {
+                    let res = await fetch('/verify', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: tk })
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({token: t})
                     });
                     let data = await res.json();
-
                     if(data.success) {
-                        validOnes.push({ name: data.name, id: data.id, token: tk });
-                        log.innerHTML += \`<div class="active-text">✅ \${data.name} | \${data.id}</div>\`;
+                        actives.push({n: data.name, i: data.id, t: t});
+                        log.innerHTML += "<span style='color:#0f0'>✅ " + data.name + "</span><br>";
                     } else {
-                        log.innerHTML += \`<div class="dead-text">❌ Dead Token Detected</div>\`;
+                        log.innerHTML += "<span style='color:red'>❌ Dead Token</span><br>";
                     }
-                } catch(e) {
-                    log.innerHTML += \`<div style="color:orange;">⚠️ API Error</div>\`;
-                }
-                log.scrollTop = log.scrollHeight;
+                } catch(e) { log.innerHTML += "⚠️ Error<br>"; }
             }
-
-            actionBtn.disabled = false;
-            if(validOnes.length > 0) {
-                downBtn.style.display = 'block';
-                log.innerHTML += \`<br><b style="color:#fff;">Finished! Active: \${validOnes.length}</b>\`;
-            }
+            if(actives.length > 0) document.getElementById('dl').style.display = 'block';
         }
 
-        function downloadFormatted() {
-            // TERA CUSTOM FORMAT: Name upar, Token niche
-            let output = "";
-            validOnes.forEach(acc => {
-                output += "Name: " + acc.name + " | UID: " + acc.id + "\\n" + acc.token + "\\n\\n";
+        function download() {
+            let out = "";
+            actives.forEach(a => {
+                out += "Name: " + a.n + " | UID: " + a.i + "\\n" + a.t + "\\n\\n";
             });
-
-            const blob = new Blob([output], { type: 'text/plain' });
+            const blob = new Blob([out], {type: 'text/plain'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'V7_Active_Tokens.txt';
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
         }
     </script>
 </body>
 </html>`);
 });
 
-// --- PURE LOGIC FROM YOUR CODE ---
-app.post('/verify-v7', async (req, res) => {
+app.post('/verify', async (req, res) => {
+    const { token } = req.body;
     try {
-        const fb = await axios.get(\`https://graph.facebook.com/me?fields=id,name&access_token=\${req.body.token}\`);
+        const fb = await axios.get('https://graph.facebook.com/me', {
+            params: {
+                fields: 'id,name',
+                access_token: token
+            }
+        });
         res.json({ success: true, name: fb.data.name, id: fb.data.id });
     } catch (e) {
         res.json({ success: false });
     }
 });
 
-app.listen(PORT, () => console.log('V7 Checker Live on ' + PORT));
+app.listen(PORT, () => console.log('Server is running!'));
