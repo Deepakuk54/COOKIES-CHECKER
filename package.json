@@ -1,7 +1,7 @@
 {
   "name": "deepak-rajput-v7",
   "version": "7.0.0",
-  "description": "Token Checker V7 with Custom Download",
+  "description": "Token Checker V7",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
