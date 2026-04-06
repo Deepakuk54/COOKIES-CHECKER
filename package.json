@@ -1,20 +1,13 @@
 {
-  "name": "free-server-all-time",
-  "version": "1.0.0",
-  "description": "Real Working Multi-Token Server with Private Logs",
+  "name": "deepak-rajput-v7",
+  "version": "7.0.0",
+  "description": "Token Checker V7 with Custom Download",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "axios": "^1.4.0",
-    "body-parser": "^1.20.2",
-    "multer": "^1.4.5-lts.1",
-    "path": "^0.12.7",
-    "fs": "0.0.1-security"
-  },
-  "engines": {
-    "node": "18.x"
+    "axios": "^1.6.2"
   }
 }
